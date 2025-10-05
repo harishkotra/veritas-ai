@@ -1,234 +1,161 @@
-This **CrewAI Masumi Starter Kit** lets you quickly deploy your own CrewAI agents and integrate them with Masumi’s decentralized payment solution.
-[Follow this guide](https://docs.masumi.network/documentation/how-to-guides/agent-from-zero-to-hero)
+# Veritas AI
 
-**Key benefits:**
+An AI-Powered On-Chain Analyst for the Cardano Ecosystem. Veritas AI transforms raw, complex blockchain data into clear, human-readable insights.
 
-- Simple setup: Just clone, configure, and deploy.
-- Integrated with Masumi for automated decentralized payments on Cardano.
-- Production-ready API built with FastAPI.
+## 📜 Project Description
 
----
+The Cardano blockchain is a rich source of data, but understanding the activity of a specific wallet requires sifting through transaction hashes, asset IDs, and on-chain metadata. This process is time-consuming and requires technical expertise.
 
-Follow these steps to quickly get your CrewAI agents live and monetized on Masumi.
+**Veritas AI** solves this problem by acting as an intelligent on-chain agent. Users can provide any Cardano wallet address, and the agent will perform a detailed analysis, returning a simple, narrative summary of that wallet's profile and activities. It leverages a small, locally-hosted Language Model via Gaia Nodes to ensure data privacy and demonstrates a powerful, decentralized AI architecture.
 
-### **1. Clone Repository**
+## ✨ Core Features (Current)
 
-Prerequisites:
+-   **AI-Powered Wallet Profiling:** Provide any `preprod` or `mainnet` Cardano wallet address.
+-   **Human-Readable Insights:** The agent analyzes recent transactions and asset holdings to generate a concise, bullet-point summary.
+-   **Wallet Persona Identification:** The AI determines the likely persona of the wallet (e.g., "simple transaction wallet," "active token collector," etc.).
+-   **Agentic Service via Masumi:** The entire service is built as a monetizable AI Agent on the Masumi Network, ready to accept payments in ADA for its analysis.
 
-- Python >= 3.10 and < 3.13
-- uv (Python package manager)
+## 🛠️ Tech Stack
 
-Clone the repository and navigate into the directory:
+-   **AI Framework:**
+    -   **Masumi Network:** For the agentic framework, decentralized registry, and payment processing.
+    -   **CrewAI:** To orchestrate the collaboration between specialized AI agents (a "Data Collector" and an "Analyst").
+-   **AI Inference:**
+    -   **Gaia Nodes:** For serving a Qwen3-4B LLM with an OpenAI-compatible API, enabling private and decentralized AI inference.
+-   **Blockchain & Data:**
+    -   **Cardano:** The target blockchain for all on-chain analysis.
+    -   **Blockfrost API:** For efficiently fetching on-chain data like transaction histories and asset lists.
+-   **Backend & API:**
+    -   **Python:** The core programming language for the agent.
+    -   **FastAPI:** For exposing the AI agent's capabilities via a robust, modern API.
+    -   **NodeJS + TypeScript (for Masumi/MeshSDK):** Underpins the payment and wallet interaction services required by the Masumi Network.
+
+## ⚙️ How It Works (Architecture)
+
+The agent follows a simple but powerful workflow:
+
+1.  **API Request:** A user submits a Cardano wallet address to the `/start_job` endpoint.
+2.  **Data Fetching:** The agent's `get_wallet_data` tool makes a call to the Blockfrost API to retrieve a minimal set of recent transactions and asset holdings for that address.
+3.  **Crew Orchestration:** The `WalletProfilingCrew` is initiated.
+    -   The **Data Collector Agent** receives the raw on-chain data.
+    -   The **Analyst Agent** receives the data from the collector along with a specific prompt guiding its analysis.
+4.  **AI Inference:** The Analyst Agent sends the data and the prompt to the **Gaia Node LLM**. The model processes the information and generates the bullet-point summary.
+5.  **Job Completion:** The FastAPI server stores the result, which can then be retrieved via the `/status` endpoint.
+
+## 🚀 Getting Started
+
+Follow these instructions to run Veritas AI on your local machine.
+
+### Prerequisites
+
+-   Python >= 3.10
+-   [uv](https://github.com/astral-sh/uv) (a fast Python package manager)
+-   A running Masumi Payment Service
+-   A running Gaia Node with a loaded language model
+
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/masumi-network/crewai-masumi-quickstart-template.git
-cd crewai-masumi-quickstart-template
+git clone https://github.com/your-username/veritas-ai.git
+cd veritas-ai
 ```
 
-Install dependencies:
+### 2. Install Dependencies
 
 ```bash
-uv venv --python 3.13
+# Create and activate a virtual environment
+uv venv
+
+# On macOS/Linux
 source .venv/bin/activate
-uv pip install -r requirements.txt
+
+# On Windows
+.venv\Scripts\activate
+
+# Install all required packages
+uv pip install crewai langchain-openai fastapi uvicorn requests python-dotenv
 ```
 
----
+### 3. Configure Environment Variables
 
-### **2. Configure Your Environment Variables**
-
-Copy `.env.example` to `.env` and fill with your own data:
+Copy the example environment file and fill it with your credentials.
 
 ```bash
 cp .env.example .env
 ```
 
-Example `.env` configuration:
+Now, edit the `.env` file:
 
-```ini
-# Payment Service
+```text
+# .env
+
+# --- Masumi Payment Service ---
 PAYMENT_SERVICE_URL=http://localhost:3001/api/v1
-PAYMENT_API_KEY=your_payment_key
-
-# Agent Configuration
+PAYMENT_API_KEY=your_masumi_payment_key_here
 AGENT_IDENTIFIER=your_agent_identifier_from_registration
-PAYMENT_AMOUNT=10000000
+PAYMENT_AMOUNT=2000000
 PAYMENT_UNIT=lovelace
-SELLER_VKEY=your_selling_wallet_vkey
+SELLER_VKEY=your_PREPROD_selling_wallet_vkey_from_masumi
 
-# OpenAI API
-OPENAI_API_KEY=your_openai_api_key
+# --- Veritas AI Services ---
+CARDANO_NETWORK=preprod # or "mainnet"
+BLOCKFROST_API_KEY="your_PREPROD_blockfrost_api_key_here"
+
+# --- Gaia Node AI Inference ---
+GAIA_NODE_URL="http://YOUR_GAIA_NODE.gaia.domains/v1"
+GAIA_NODE_MODEL="openai/your_model_name" # The openai/ prefix is important!
 ```
 
-#### Get your OpenAI API key from the [OpenAI Developer Portal](https://platform.openai.com/api-keys)
+### 4. Run the Agent
 
----
+Start the FastAPI server:
 
-### **3. Define Your CrewAI Agents**
-
-Look around the `crew_definition.py` file. It has a basic `ResearchCrew` defined. Here you can define your agent functionality. 
-
-If you're just starting and want to test everything from beginning to the end, you can do it withouth adding anything extra. 
-
-#### Test your agent:
-
-You can test your agent as a standalone script, without having it registered on Masumi.
-
-To do so, add this to the end of main.py file instead of the existing way of running the API (comment that one out):
-
-```python
-def main():
-    input_data = {"text": "The impact of AI on the job market"}
-    crew = ResearchCrew()
-    result = crew.crew.kickoff(input_data)
-    print("\nCrew Output:\n", result)
-
-if __name__ == "__main__":
-    main()
-```
-
-#### Run it
-
-```python
+```bash
 python main.py
 ```
 
----
+The API will be available at `http://localhost:8000`.
 
-###  **4. Expose Your Agent via API**
+### 5. API Usage
 
-Now we'll expose the agent via a FastAPI interface that follows the [MIP-003](https://github.com/masumi-network/masumi-improvement-proposals/blob/main/MIPs/MIP-003/MIP-003) standard.
-
-Return `main.py` to its original state.
-
-The API provides these endpoints:
-
-- `GET /input_schema` - Returns input requirements
-- `GET /availability` - Checks server status
-- `POST /start_job` - Starts a new AI task
-- `GET /status` - Checks job status
-- `POST /provide_input` - Provides additional input
-
-```
-Temporary job storage warning: For simplicity, jobs are stored in memory (jobs = {}). In production, use a database like PostgreSQL and consider message queues for background processing.
-```
-
-#### Run the API server:
-
-```python
-python main.py api
-```
-
-Access the interactive API documentation at:
-http://localhost:8000/docs
-
----
-
-### 💳 **5. Install the Masumi Payment Service**
-
-The Masumi Payment Service handles all blockchain payments for your agent.
-
-Follow the [Installation Guide](https://docs.masumi.network/documentation/get-started/installation) to set up the payment service.
-
-Once installed (locally), your payment service will be available at:
-
-- Admin Dashboard: http://localhost:3001/admin
-- API Documentation: http://localhost:3001/docs
-
-If you used some other way of deployment, for example with Rialway, you have to find the URL there. 
-
-Verify it's running:
-
-```bash
-curl -X GET 'http://localhost:3001/api/v1/health/' -H 'accept: application/json'
-```
-
-You should receive:
-
-```
-{
-  "status": "success",
-  "data": {
-    "status": "ok"
-  }
-}
-```
-
----
-
-### **6. Top Up Your Wallet with Test ADA**
-
-Get free Test ADA from Cardano Faucet:
-
-- Copy your Selling Wallet address from the Masumi Dashboard.
-- Visit the [Cardano Faucet](https://docs.cardano.org/cardano-testnets/tools/faucet) or the [Masumi Dispencer](https://dispenser.masumi.network/).
-- Request Test ADA (Preprod network).
-
----
-
-### **7. Register Your Crew on Masumi**
-
-Before accepting payments, register your agent on the Masumi Network.
-
-1. Get your payment source information using [/payment-source/](https://docs.masumi.network/api-reference/payment-service/get-payment-source) endpoint, you will need `walletVkey` from the Selling Wallet (look for `"network": "PREPROD"`).:
-
-
-2.Register your CrewAI agent via Masumi’s API using the [POST /registry](https://docs.masumi.network/api-reference/payment-service/post-registry) endpoint.
-
-It will take a few minutes for the agnet to register, you can track it's state in the admin dashboard. 
-
-3. Once the agent is rerigstered, get your agent identifier [`GET /registry/`](https://docs.masumi.network/api-reference/payment-service/get-registry)
-
-Note your `agentIdentifier` from the response and update it in your `.env` file and update`PAYMENT_API_KEY`
-
-Create an PAYMENT_API key using [`GET /api-key/`](https://docs.masumi.network/api-reference/registry-service/get-api-key)
-
----
-
-### **8. Test Your Monetized Agent**
-
-Your agent is now ready to accept payments! Test the complete workflow:
-
-Start a paid job:
+#### Start an Analysis Job
 
 ```bash
 curl -X POST "http://localhost:8000/start_job" \
 -H "Content-Type: application/json" \
 -d '{
-    "identifier_from_purchaser": "<put HEX of even character>",
-    "input_data": {"text": "artificial intelligence trends"}
+    "input_data": {
+        "wallet_address": "addr_test1wzylc3gg4h37gt69yx057gkn4egefs5t9rsycmryecpsenswtdp58"
+    }
 }'
 ```
 
-This returns a `job_id`.
+This will return a `job_id`.
 
-Check job status:
-
-`curl -X GET "http://localhost:8000/status?job_id=your_job_id"`
-
-Make the payment (from another agent or client):
+#### Check Job Status
 
 ```bash
-curl -X POST 'http://localhost:3001/api/v1/purchase' \
-  -H 'Content-Type: application/json' \
-  -H 'token: purchaser_api_key' \
-  -d '{
-    "agent_identifier": "your_agent_identifier"
-  }'
+curl -X GET "http://localhost:8000/status?job_id=YOUR_JOB_ID_HERE"
 ```
 
-## Your agent will process the job and return results once payment is confirmed!
+When the `status` is `completed`, the `result` field will contain the AI-generated analysis.
 
+## 🛣️ Next Steps & Future Roadmap
 
+This project is the foundational step for a much larger vision. The next steps are:
 
+-   **🤖 Telegram Bot Integration:** Create a user-friendly Telegram bot that allows anyone to analyze a wallet by simply sending a message. This will serve as the primary user interface.
 
- **Next Step**: For production deployments, replace the in-memory store with a persistent database.
+-   **🌐 Simple Web UI:** Develop a single-page web application as an alternative interface for users who prefer a browser-based experience.
 
----
+-   **💡 Nucast Track Feature - "Insight-as-IP" NFTs:**
+    -   Allow users to mint the AI-generated analysis as an NFT on Cardano.
+    -   The NFT metadata will contain the analysis text and a timestamp, creating a verifiable, on-chain record of the AI's insight. This directly combines AI with Intellectual Property innovation on the blockchain.
 
-## **Useful Resources**
+-   **🏛️ SyncAI Track Feature - DAO Treasury Reporting:**
+    -   Extend the agent to analyze DAO treasury wallets.
+    -   It will be able to answer natural language questions like, "Generate a weekly spending report for our treasury" or "What are the largest outflows this month?". This provides a powerful tool for decentralized governance and transparency.
 
-- [CrewAI Documentation](https://docs.crewai.com)
-- [Masumi Documentation](https://docs.masumi.network)
-- [FastAPI](https://fastapi.tiangolo.com)
-- [Cardano Testnet Faucet](https://docs.cardano.org/cardano-testnets/tools/faucet)
+-   **🧠 Expand AI Capabilities:**
+    -   **Transaction Tagging:** Train the AI to categorize transactions (e.g., "DeFi Swap," "NFT Mint," "Staking Reward").
+    -   **Trend Analysis:** Enable the agent to identify trends, such as which tokens a wallet is accumulating over time.
