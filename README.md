@@ -2,7 +2,8 @@
 
 An AI-Powered On-Chain Analyst for the Cardano Ecosystem. Veritas AI transforms raw, complex blockchain data into clear, human-readable insights.
 
-# [Project Presentation/Video](https://youtu.be/ycd8y3myxhA)
+### [Project Presentation/Video](https://youtu.be/ycd8y3myxhA) - v1 (for first deadline)
+### [Project Presentation/Video 2](https://youtu.be/YxeRceb9N1g) - v2 (for extended deadline)
 
 ## Screenshots
 
