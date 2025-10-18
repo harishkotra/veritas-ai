@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Import our new crew definition
 from crew_definition import WalletProfilingCrew
 
 jobs = {}
@@ -18,7 +19,8 @@ class Job(BaseModel):
     log: str | None = None
 
 class StartJobInput(BaseModel):
-    wallet_address: str
+    wallet_address_1: str
+    wallet_address_2: str | None = None
 
 class StartJobRequest(BaseModel):
     input_data: StartJobInput
@@ -36,62 +38,41 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-def run_crew_in_background(job_id: str, wallet_address: str):
+def run_crew_in_background(job_id: str, wallet_address_1: str, wallet_address_2: str | None):
     """This function runs the CrewAI task in the background to avoid blocking the API."""
     try:
         jobs[job_id].status = "running"
-        crew = WalletProfilingCrew(wallet_address=wallet_address)
-        
-        # The crew.run() method will now return a dictionary
-        response_data = crew.run() # Get the full response object
-        
+        crew = WalletProfilingCrew(wallet_address_1=wallet_address_1, wallet_address_2=wallet_address_2)
+        response_data = crew.run()
         jobs[job_id].status = "completed"
-        # The final report from the agents
         jobs[job_id].result = response_data["result"].raw 
-        # The captured console log of the agent's process
         jobs[job_id].log = response_data["log"] 
-
     except Exception as e:
         jobs[job_id].status = "failed"
         jobs[job_id].result = f"An error occurred: {e}"
         jobs[job_id].log = f"Error during execution: {e}"
 
-
-@app.get("/input_schema", summary="Get Input Schema")
-def get_input_schema():
-    """Returns the JSON schema for the input data required to start a job."""
-    return {
-        "type": "object",
-        "properties": {
-            "wallet_address": {
-                "type": "string",
-                "description": "The Cardano wallet address (addr1...) to be analyzed."
-            }
-        },
-        "required": ["wallet_address"]
-    }
-
 @app.post("/start_job", response_model=Job, summary="Start a Wallet Profiling Job")
 def start_job(request: StartJobRequest, background_tasks: BackgroundTasks):
     """
-    Starts a new AI-powered analysis for the given Cardano wallet address.
+    Starts a new AI-powered analysis. Can be a single wallet profile
+    or a comparative analysis between two wallets.
     """
-    wallet_address = request.input_data.wallet_address
+    wallet_address_1 = request.input_data.wallet_address_1
+    wallet_address_2 = request.input_data.wallet_address_2
     
-    if not wallet_address or not (wallet_address.startswith("addr1") or wallet_address.startswith("addr_test1")):
-        raise HTTPException(status_code=400, detail="A valid Cardano wallet address (addr1... or addr_test1...) is required.")
+    if not wallet_address_1 or not (wallet_address_1.startswith("addr1") or wallet_address_1.startswith("addr_test1")):
+        raise HTTPException(status_code=400, detail="A valid primary Cardano wallet address (addr1... or addr_test1...) is required.")
+    if wallet_address_2 and not (wallet_address_2.startswith("addr1") or wallet_address_2.startswith("addr_test1")):
+         raise HTTPException(status_code=400, detail="The second Cardano wallet address is invalid.")
 
     job_id = str(uuid.uuid4())
     jobs[job_id] = Job(job_id=job_id, status="pending")
-
-    # Run the time-consuming AI task in the background
-    background_tasks.add_task(run_crew_in_background, job_id, wallet_address)
-
+    background_tasks.add_task(run_crew_in_background, job_id, wallet_address_1, wallet_address_2)
     return jobs[job_id]
 
 @app.get("/status", response_model=Job, summary="Check Job Status")
 def get_status(job_id: str):
-    """Retrieves the status and result of a previously started job."""
     job = jobs.get(job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")

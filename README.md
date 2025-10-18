@@ -6,8 +6,7 @@ An AI-Powered On-Chain Analyst for the Cardano Ecosystem. Veritas AI transforms 
 
 ## Screenshots
 
-![Uploading Vertias-Presentation (1).gif…]()
-
+*(Note: The screenshots below are from a previous version. The new UI includes tabs for single wallet analysis and the wallet duel.)*
 
 <img width="1501" height="1114" alt="Screenshot at Oct 05 21-33-21" src="https://github.com/user-attachments/assets/483564a8-6579-4b34-92e7-5711e0bae039" />
 <img width="1499" height="1052" alt="Screenshot at Oct 05 21-33-41" src="https://github.com/user-attachments/assets/44a3e8c7-f8e4-4de9-8530-fd0575de37b6" />
@@ -21,16 +20,17 @@ The Cardano blockchain is a rich source of data, but understanding the activity 
 
 ## ✨ Core Features (Current)
 
--   **AI-Powered Wallet Profiling:** Provide any `preprod` or `mainnet` Cardano wallet address.
--   **Human-Readable Insights:** The agent analyzes recent transactions and asset holdings to generate a concise, bullet-point summary.
--   **Wallet Persona Identification:** The AI determines the likely persona of the wallet (e.g., "simple transaction wallet," "active token collector," etc.).
+-   **AI-Powered Wallet Profiling:** Provides a detailed persona and activity summary for any `preprod` or `mainnet` Cardano wallet.
+-   **On-Chain Security Analysis:** A specialized security agent scans the wallet for heuristics like token dust and high transaction velocity to provide a risk profile.
+-   **Wallet Duel Mode:** A comparative analysis mode where two wallets can be analyzed side-by-side to contrast their activity, diversity, and overall strategy.
+-   **Interactive Web UI:** A user-friendly interface built with Streamlit that allows for easy analysis and viewing of the agent's thought process.
 -   **Agentic Service via Masumi:** The entire service is built as a monetizable AI Agent on the Masumi Network, ready to accept payments in ADA for its analysis.
 
 ## 🛠️ Tech Stack
 
 -   **AI Framework:**
     -   **Masumi Network:** For the agentic framework, decentralized registry, and payment processing.
-    -   **CrewAI:** To orchestrate the collaboration between specialized AI agents (a "Data Collector" and an "Analyst").
+    -   **CrewAI:** To orchestrate the collaboration between specialized AI agents (a "Data Collector," "Analyst," and "Security Analyst").
 -   **AI Inference:**
     -   **Gaia Nodes:** For serving a Qwen3-4B LLM with an OpenAI-compatible API, enabling private and decentralized AI inference.
 -   **Blockchain & Data:**
@@ -39,19 +39,21 @@ The Cardano blockchain is a rich source of data, but understanding the activity 
 -   **Backend & API:**
     -   **Python:** The core programming language for the agent.
     -   **FastAPI:** For exposing the AI agent's capabilities via a robust, modern API.
+    -   **Streamlit:** For the interactive web-based user interface.
     -   **NodeJS + TypeScript (for Masumi/MeshSDK):** Underpins the payment and wallet interaction services required by the Masumi Network.
 
 ## ⚙️ How It Works (Architecture)
 
-The agent follows a simple but powerful workflow:
+The agent follows a powerful, conditional workflow:
 
-1.  **API Request:** A user submits a Cardano wallet address to the `/start_job` endpoint.
-2.  **Data Fetching:** The agent's `get_wallet_data` tool makes a call to the Blockfrost API to retrieve a minimal set of recent transactions and asset holdings for that address.
-3.  **Crew Orchestration:** The `WalletProfilingCrew` is initiated.
-    -   The **Data Collector Agent** receives the raw on-chain data.
-    -   The **Analyst Agent** receives the data from the collector along with a specific prompt guiding its analysis.
-4.  **AI Inference:** The Analyst Agent sends the data and the prompt to the **Gaia Node LLM**. The model processes the information and generates the bullet-point summary.
-5.  **Job Completion:** The FastAPI server stores the result, which can then be retrieved via the `/status` endpoint.
+1.  **User Interaction:** A user interacts with the Streamlit UI, choosing either a single wallet analysis or a two-wallet comparison.
+2.  **API Request:** The Streamlit frontend sends a request to the FastAPI `/start_job` endpoint with one or two wallet addresses.
+3.  **Data Fetching:** The agent's `get_wallet_data` tool makes calls to the Blockfrost API to retrieve a minimal set of data for each address.
+4.  **Crew Orchestration (Conditional):**
+    -   **Single Wallet Mode:** A three-agent crew is initiated. The **Data Collector** passes data to the **Wallet Analyst**, who creates a profile. The profile is then passed to the **Security Analyst**, who appends a risk assessment.
+    -   **Wallet Duel Mode:** A specialized, single-agent crew is initiated. The **Comparative Analyst** receives data from both wallets and generates a direct comparison.
+5.  **AI Inference:** The agents send their data and prompts to the **Gaia Node LLM**. The model processes the information and generates the analysis.
+6.  **Job Completion:** The FastAPI server stores the final report and the agent's thought process log, which the Streamlit UI polls for and displays to the user.
 
 ## 🚀 Getting Started
 
@@ -84,8 +86,7 @@ source .venv/bin/activate
 .venv\Scripts\activate
 
 # Install all required packages
-uv pip install crewai langchain-openai fastapi uvicorn requests python-dotenv
-```
+uv pip install crewai langchain-openai fastapi uvicorn requests python-dotenv streamlit```
 
 ### 3. Configure Environment Variables
 
@@ -102,11 +103,7 @@ Now, edit the `.env` file:
 
 # --- Masumi Payment Service ---
 PAYMENT_SERVICE_URL=http://localhost:3001/api/v1
-PAYMENT_API_KEY=your_masumi_payment_key_here
-AGENT_IDENTIFIER=your_agent_identifier_from_registration
-PAYMENT_AMOUNT=2000000
-PAYMENT_UNIT=lovelace
-SELLER_VKEY=your_PREPROD_selling_wallet_vkey_from_masumi
+# ... (rest of your .env file)
 
 # --- Veritas AI Services ---
 CARDANO_NETWORK=preprod # or "mainnet"
@@ -117,56 +114,43 @@ GAIA_NODE_URL="http://YOUR_GAIA_NODE.gaia.domains/v1"
 GAIA_NODE_MODEL="openai/your_model_name" # The openai/ prefix is important!
 ```
 
-### 4. Run the Agent
+### 4. Run the Application
 
-Start the FastAPI server:
+You need to run two services in separate terminals.
+
+**Terminal 1: Start the Backend API**
 
 ```bash
 python main.py
 ```
-
 The API will be available at `http://localhost:8000`.
 
-### 5. API Usage
-
-#### Start an Analysis Job
+**Terminal 2: Start the Web UI**
 
 ```bash
-curl -X POST "http://localhost:8000/start_job" \
--H "Content-Type: application/json" \
--d '{
-    "input_data": {
-        "wallet_address": "addr_test1wzylc3gg4h37gt69yx057gkn4egefs5t9rsycmryecpsenswtdp58"
-    }
-}'
+streamlit run ui.py
 ```
+A browser window should automatically open to the web interface.
 
-This will return a `job_id`.
+### 5. Using the Web Interface
 
-#### Check Job Status
-
-```bash
-curl -X GET "http://localhost:8000/status?job_id=YOUR_JOB_ID_HERE"
-```
-
-When the `status` is `completed`, the `result` field will contain the AI-generated analysis.
+-   **Single Wallet Analysis:** Use the first tab to analyze a single wallet. You can use the example buttons or paste in a new address. The final report will contain both a "Wallet Profile" and a "Security Observations" section.
+-   **Wallet Duel:** Use the second tab to compare two wallets side-by-side.
+-   **Agent Thought Process:** After any analysis is complete, an expandable section appears, allowing you to view the raw log of the AI agents' thinking process.
+-   **Download Report:** You can download any generated report as a Markdown file.
 
 ## 🛣️ Next Steps & Future Roadmap
 
 This project is the foundational step for a much larger vision. The next steps are:
 
 -   **🤖 Telegram Bot Integration:** Create a user-friendly Telegram bot that allows anyone to analyze a wallet by simply sending a message. This will serve as the primary user interface.
-
--   **🌐 Simple Web UI:** Develop a single-page web application as an alternative interface for users who prefer a browser-based experience.
-
+-   **🌐 Simple Web UI:** A functional web UI has been implemented with Streamlit, serving as a powerful demonstration and alternative interface.
 -   **💡 Nucast Track Feature - "Insight-as-IP" NFTs:**
     -   Allow users to mint the AI-generated analysis as an NFT on Cardano.
     -   The NFT metadata will contain the analysis text and a timestamp, creating a verifiable, on-chain record of the AI's insight. This directly combines AI with Intellectual Property innovation on the blockchain.
-
 -   **🏛️ SyncAI Track Feature - DAO Treasury Reporting:**
     -   Extend the agent to analyze DAO treasury wallets.
     -   It will be able to answer natural language questions like, "Generate a weekly spending report for our treasury" or "What are the largest outflows this month?". This provides a powerful tool for decentralized governance and transparency.
-
 -   **🧠 Expand AI Capabilities:**
     -   **Transaction Tagging:** Train the AI to categorize transactions (e.g., "DeFi Swap," "NFT Mint," "Staking Reward").
     -   **Trend Analysis:** Enable the agent to identify trends, such as which tokens a wallet is accumulating over time.
