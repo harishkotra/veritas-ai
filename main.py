@@ -3,17 +3,19 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import uuid
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
 
-# Import our new crew definition
+load_dotenv()
+
 from crew_definition import WalletProfilingCrew
 
-# --- In-memory job store (good for a hackathon) ---
 jobs = {}
 
 class Job(BaseModel):
     job_id: str
     status: str
     result: str | None = None
+    log: str | None = None
 
 class StartJobInput(BaseModel):
     wallet_address: str
@@ -39,14 +41,21 @@ def run_crew_in_background(job_id: str, wallet_address: str):
     try:
         jobs[job_id].status = "running"
         crew = WalletProfilingCrew(wallet_address=wallet_address)
-        result_object = crew.run() # Get the full result object
+        
+        # The crew.run() method will now return a dictionary
+        response_data = crew.run() # Get the full response object
+        
         jobs[job_id].status = "completed"
-        # OLD LINE: jobs[job_id].result = result_object
-        # NEW LINE: Store only the clean, raw text output
-        jobs[job_id].result = result_object.raw 
+        # The final report from the agents
+        jobs[job_id].result = response_data["result"].raw 
+        # The captured console log of the agent's process
+        jobs[job_id].log = response_data["log"] 
+
     except Exception as e:
         jobs[job_id].status = "failed"
         jobs[job_id].result = f"An error occurred: {e}"
+        jobs[job_id].log = f"Error during execution: {e}"
+
 
 @app.get("/input_schema", summary="Get Input Schema")
 def get_input_schema():
@@ -69,10 +78,6 @@ def start_job(request: StartJobRequest, background_tasks: BackgroundTasks):
     """
     wallet_address = request.input_data.wallet_address
     
-    # OLD LINE:
-    # if not wallet_address or not wallet_address.startswith("addr1"):
-    
-    # NEW, UPDATED LINE:
     if not wallet_address or not (wallet_address.startswith("addr1") or wallet_address.startswith("addr_test1")):
         raise HTTPException(status_code=400, detail="A valid Cardano wallet address (addr1... or addr_test1...) is required.")
 
@@ -92,7 +97,6 @@ def get_status(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
-# --- Main entry point for running the API server ---
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
