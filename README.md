@@ -6,8 +6,13 @@ An AI-Powered On-Chain Analyst for the Cardano Ecosystem. Veritas AI transforms 
 
 ## Screenshots
 
-*(Note: The screenshots below are from a previous version. The new UI includes tabs for single wallet analysis and the wallet duel.)*
+#### v2
 
+<img width="1456" height="6299" alt="FireShot Capture 015 - Veritas AI - localhost" src="https://github.com/user-attachments/assets/9e73b7dc-3ab7-422e-b3db-854d862ac7e7" />
+<img width="1456" height="4463" alt="FireShot Capture 014 - Veritas AI - localhost" src="https://github.com/user-attachments/assets/fcf42824-9e31-4e7b-8c8d-396e25120491" />
+<img width="1456" height="1581" alt="FireShot Capture 013 - Veritas AI - localhost" src="https://github.com/user-attachments/assets/ef16043f-4f29-4678-9df8-f8567a614d8e" />
+
+#### v1
 <img width="1501" height="1114" alt="Screenshot at Oct 05 21-33-21" src="https://github.com/user-attachments/assets/483564a8-6579-4b34-92e7-5711e0bae039" />
 <img width="1499" height="1052" alt="Screenshot at Oct 05 21-33-41" src="https://github.com/user-attachments/assets/44a3e8c7-f8e4-4de9-8530-fd0575de37b6" />
 <img width="1500" height="634" alt="Screenshot at Oct 05 21-33-50" src="https://github.com/user-attachments/assets/642a99df-2efb-4bab-8866-aab07ffc557e" />
